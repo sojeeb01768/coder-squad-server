@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const express = require('express');
 const app = express();
@@ -50,7 +50,6 @@ async function run() {
 
         app.post('/addTask', async (req, res) => {
             const request = req.body;
-            // const task = { ...request }
             try {
                 const result = await taskCollection.insertOne(request);
                 res.send(result);
@@ -66,16 +65,45 @@ async function run() {
                 if (!result) {
                     return res.status(404).send('No tasks found for this email');
                 }
-                console.log(result);
                 res.send(result);
             } catch (error) {
                 console.error(error.message);
                 res.status(500).send('Failed to get task data');
             }
         });
+       
+        app.put('/updateTask/:id', async (req, res) => {
+            try {
+                const updatedTask = req.body.task; 
+                const id = req.params.id;
+                const filter = { _id: new ObjectId(id) };
+                const updateData = { $set: { task: updatedTask } };
 
+                console.log('Received updated task:', updatedTask); 
 
+                const result = await taskCollection.updateOne(filter, updateData);
 
+                if (result.modifiedCount === 1) {
+                    res.status(200).json({ message: 'Task updated successfully', updatedTask });
+                } else {
+                    res.status(404).json({ message: 'Task not found or not modified' });
+                }
+            } catch (error) {
+                console.error('Failed to update task:', error);
+                res.status(500).send('Failed to update task');
+            }
+        });
+
+        app.delete('/tasks/:id', async (req, res) => {
+            try {
+                const id = req.params.id;
+                const deleteQuery = { _id: new ObjectId(id) };
+                const result = await taskCollection.deleteOne(deleteQuery)
+                res.send(result)
+            } catch (error) {
+                res.status(200).send('Failed to delete student')
+            }
+        })
 
 
         // Send a ping to confirm a successful connection
